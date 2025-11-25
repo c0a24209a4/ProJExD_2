@@ -88,18 +88,6 @@ def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
         dx, dyは横・縦の移動量
     """
     kk_imgs = {}
-
-    kk_dict = {
-        (0, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9),      # 動かない場合
-        (+5, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), -90, 0.9),   # 右
-        (+5, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), -45, 0.9),  # 右上
-        (0, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9),     # 上
-        (-5, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 45, 0.9),   # 左上
-        (-5, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), 90, 0.9),    # 左
-        (-5, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 135, 0.9),  # 左下
-        (0, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 180, 0.9),   # 下
-        (+5, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), -135, 0.9)  # 右下
-    }
     
     # 元画像をロード
     kk_img_orig = pg.image.load("fig/3.png")
@@ -118,6 +106,32 @@ def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
 
     return kk_imgs
 
+# =============/////============= 
+
+# =============演習4===============
+def follow_direction(org: pg.Rect, dst: pg.Rect, current_v: tuple[float,float]=(0,0)) -> tuple[float,float]:
+    """
+    爆弾(org)がこうかとん(dst)に追従する方向ベクトルを返す。
+
+    :param org: 爆弾のRect
+    :param dst: こうかとんのRect
+    :param current_v: 現在の速度（慣性用）
+    :return: (vx, vy)
+    """
+    dx = dst.centerx - org.centerx
+    dy = dst.centery - org.centery
+    distance = (dx**2 + dy**2) ** 0.5
+
+    if distance < 300:  # 近すぎたら慣性で移動
+        return current_v
+
+    if distance == 0:  # 完全に重なった場合
+        return (0, 0)
+
+    norm = (dx**2 + dy**2) ** 0.5
+    vx = dx / norm * (50**0.5)  # ノルム√50になるように正規化
+    vy = dy / norm * (50**0.5)
+    return (vx, vy)
 # =============/////============= 
 
 def main():
@@ -144,6 +158,9 @@ def main():
     kk_imgs_dict = get_kk_imgs()
     # ===========////=============
 
+     # ===========演習4=============
+    current_v = (vx, vy)
+     # ===========////=============
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT: 
@@ -158,26 +175,28 @@ def main():
         # tmrはフレームタイマーなど
         idx = min(tmr // 500, 9)  # 0～9でSurfaceと加速度を選択
         bb_img = bb_imgs[idx]
-        avx = vx * bb_accs[idx]
-        avy = vy * bb_accs[idx]
+
 
         # 爆弾Rectのサイズ更新
         bb_rct.width = bb_img.get_rect().width
         bb_rct.height = bb_img.get_rect().height
+        # 追従方向を計算
+        vx, vy = follow_direction(bb_rct, kk_rct, current_v)
+
+        # 加速度を反映
+        vx *= bb_accs[idx]
+        vy *= bb_accs[idx]
+
+        # 現在の速度を更新（慣性）
+        current_v = (vx, vy)
 
         # 移動
-        bb_rct.move_ip(avx, avy)
+        bb_rct.move_ip(vx, vy)
+        # 移動
 
         key_lst = pg.key.get_pressed()
         sum_mv = [0, 0]
-        # if key_lst[pg.K_UP]:
-        #     sum_mv[1] -= 5
-        # if key_lst[pg.K_DOWN]:
-        #     sum_mv[1] += 5
-        # if key_lst[pg.K_LEFT]:
-        #     sum_mv[0] -= 5
-        # if key_lst[pg.K_RIGHT]:
-        #     sum_mv[0] += 5
+        
         for key, mv in DELTA.items():
             if key_lst[key]:
                 sum_mv[0] += mv[0]  # 横方向の移動量
@@ -187,13 +206,9 @@ def main():
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])  # 移動をなかったことにする
         screen.blit(kk_img, kk_rct)
         yoko, tate = check_bound(bb_rct)
-        if not yoko:  # 横方向にはみ出ていたら
-            vx *= -1
-        if not tate:  # 縦方向にはみ出ていたら
-            vy *= -1
-        bb_rct.move_ip(vx, vy)
-
-
+        # 爆弾がこうかとんに追従する方向を計算
+        
+    
         # ==========演習3============
         sum_mv_tuple = tuple(sum_mv)  # sum_mv = [dx, dy]
         kk_img = kk_imgs_dict.get(sum_mv_tuple, kk_imgs_dict[(0, 0)])
