@@ -28,6 +28,7 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
+
 def gameover(screen: pg.Surface) -> None:
     """
     Docstring for gameover
@@ -57,6 +58,7 @@ def gameover(screen: pg.Surface) -> None:
     pg.display.update()
     time.sleep(5)
 
+
 def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
     """
     10段階の大きさの爆弾Surfaceと加速度リストを作成して返す。
@@ -78,8 +80,6 @@ def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
     return bb_imgs, bb_accs
 
 
-
-# ============= 演習3 ============
 def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
     """
     こうかとんの移動方向に応じた画像Surfaceの辞書を返す
@@ -106,9 +106,7 @@ def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
 
     return kk_imgs
 
-# =============/////============= 
 
-# =============演習4===============
 def follow_direction(org: pg.Rect, dst: pg.Rect, current_v: tuple[float,float]=(0,0)) -> tuple[float,float]:
     """
     爆弾(org)がこうかとん(dst)に追従する方向ベクトルを返す。
@@ -132,7 +130,7 @@ def follow_direction(org: pg.Rect, dst: pg.Rect, current_v: tuple[float,float]=(
     vx = dx / norm * (50**0.5)  # ノルム√50になるように正規化
     vy = dy / norm * (50**0.5)
     return (vx, vy)
-# =============/////============= 
+
 
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
@@ -153,14 +151,9 @@ def main():
 
     # while文の前に呼び出してSurfaceリストと加速度リストを取得
     bb_imgs, bb_accs = init_bb_imgs()
-
-    # ===========演習3============
     kk_imgs_dict = get_kk_imgs()
-    # ===========////=============
-
-     # ===========演習4=============
     current_v = (vx, vy)
-     # ===========////=============
+
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT: 
@@ -208,11 +201,8 @@ def main():
         yoko, tate = check_bound(bb_rct)
         # 爆弾がこうかとんに追従する方向を計算
         
-    
-        # ==========演習3============
         sum_mv_tuple = tuple(sum_mv)  # sum_mv = [dx, dy]
         kk_img = kk_imgs_dict.get(sum_mv_tuple, kk_imgs_dict[(0, 0)])
-        # ===========////============
 
         screen.blit(bb_img, bb_rct)
         pg.display.update()
