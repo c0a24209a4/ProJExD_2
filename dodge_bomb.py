@@ -35,7 +35,6 @@ def gameover(screen: pg.Surface) -> None:
     
     :param screen: pg.Surface
     """
-
     ov_img = pg.Surface((WIDTH, HEIGHT))
     ov_img.fill((0, 0, 0))
     ov_img.set_alpha(200)
@@ -107,29 +106,39 @@ def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
     return kk_imgs
 
 
-def follow_direction(org: pg.Rect, dst: pg.Rect, current_v: tuple[float,float]=(0,0)) -> tuple[float,float]:
-    """
-    爆弾(org)がこうかとん(dst)に追従する方向ベクトルを返す。
-
-    :param org: 爆弾のRect
-    :param dst: こうかとんのRect
-    :param current_v: 現在の速度（慣性用）
-    :return: (vx, vy)
-    """
-    dx = dst.centerx - org.centerx
-    dy = dst.centery - org.centery
-    distance = (dx**2 + dy**2) ** 0.5
-
-    if distance < 300:  # 近すぎたら慣性で移動
-        return current_v
-
-    if distance == 0:  # 完全に重なった場合
-        return (0, 0)
-
-    norm = (dx**2 + dy**2) ** 0.5
-    vx = dx / norm * (50**0.5)  # ノルム√50になるように正規化
-    vy = dy / norm * (50**0.5)
-    return (vx, vy)
+def calc_orientation(org: pg.Rect, dst: pg.Rect, current_xy: tuple[float, float]) -> tuple[float, float]: 
+    """ 
+    org: 爆弾Rect 
+    dst: こうかとんRect 
+    current_xy: 直前の移動方向 (vx, vy) 
+    return: 新しい移動方向ベクトル (vx, vy) 
+    """ 
+    ox, oy = org.center 
+    dx, dy = dst.center 
+ 
+    # 差ベクトル
+    diff_x = dx - ox 
+    diff_y = dy - oy 
+ 
+    # 距離
+    dist2 = diff_x ** 2 + diff_y ** 2 
+    dist = dist2 ** 0.5 
+ 
+    # 距離が300未満 → current_xy（慣性）を維持 
+    if dist < 300: 
+        return current_xy 
+ 
+    # 正規化後の大きさ √50（=5×√2 に相当） 
+    speed = 50 ** 0.5  # ≒ 7.07 
+ 
+    if dist != 0: 
+        nx = diff_x / dist * speed 
+        ny = diff_y / dist * speed 
+    else: 
+        # 万が一同じ座標にいる場合はそのまま 
+        nx, ny = current_xy 
+ 
+    return (nx, ny) 
 
 
 def main():
@@ -162,30 +171,38 @@ def main():
         if kk_rct.colliderect(bb_rct):  # こうかとんと爆弾が衝突したら
             gameover(screen)
             return
-
-        screen.blit(bg_img, [0, 0]) 
+        
+        # --- 衝突 --- 
+        if kk_rct.colliderect(bb_rct): 
+            gameover(screen) 
+            return 
+    
+        screen.blit(bg_img, (0, 0)) 
 
         # tmrはフレームタイマーなど
         idx = min(tmr // 500, 9)  # 0～9でSurfaceと加速度を選択
         bb_img = bb_imgs[idx]
 
-
         # 爆弾Rectのサイズ更新
         bb_rct.width = bb_img.get_rect().width
         bb_rct.height = bb_img.get_rect().height
-        # 追従方向を計算
-        vx, vy = follow_direction(bb_rct, kk_rct, current_v)
 
-        # 加速度を反映
-        vx *= bb_accs[idx]
-        vy *= bb_accs[idx]
+        # 追従方向を計算
+        vx, vy = calc_orientation(bb_rct, kk_rct, current_v)
+
+        # 距離が300未満なら加速度倍率を掛けずに慣性だけ
+        dx = kk_rct.centerx - bb_rct.centerx
+        dy = kk_rct.centery - bb_rct.centery
+        distance = (dx**2 + dy**2)**0.5
+        if distance >= 300:
+            vx *= bb_accs[idx]
+            vy *= bb_accs[idx]
 
         # 現在の速度を更新（慣性）
         current_v = (vx, vy)
 
         # 移動
         bb_rct.move_ip(vx, vy)
-        # 移動
 
         key_lst = pg.key.get_pressed()
         sum_mv = [0, 0]
@@ -199,7 +216,6 @@ def main():
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])  # 移動をなかったことにする
         screen.blit(kk_img, kk_rct)
         yoko, tate = check_bound(bb_rct)
-        # 爆弾がこうかとんに追従する方向を計算
         
         sum_mv_tuple = tuple(sum_mv)  # sum_mv = [dx, dy]
         kk_img = kk_imgs_dict.get(sum_mv_tuple, kk_imgs_dict[(0, 0)])
