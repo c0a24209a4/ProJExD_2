@@ -76,7 +76,50 @@ def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
         bb_imgs.append(bb_img)
     
     return bb_imgs, bb_accs
-        
+
+
+
+# ============= 演習3 ============
+def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
+    """
+    こうかとんの移動方向に応じた画像Surfaceの辞書を返す
+
+    :return: {(dx, dy): Surface, ...}
+        dx, dyは横・縦の移動量
+    """
+    kk_imgs = {}
+
+    kk_dict = {
+        (0, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9),      # 動かない場合
+        (+5, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), -90, 0.9),   # 右
+        (+5, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), -45, 0.9),  # 右上
+        (0, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 0, 0.9),     # 上
+        (-5, -5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 45, 0.9),   # 左上
+        (-5, 0): pg.transform.rotozoom(pg.image.load("fig/3.png"), 90, 0.9),    # 左
+        (-5, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 135, 0.9),  # 左下
+        (0, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), 180, 0.9),   # 下
+        (+5, +5): pg.transform.rotozoom(pg.image.load("fig/3.png"), -135, 0.9)  # 右下
+    }
+    
+    # 元画像をロード
+    kk_img_orig = pg.image.load("fig/3.png")
+    
+    # 移動方向ごとにrotozoomで回転
+    # (dx, dy): (横移動, 縦移動)
+    kk_imgs[(0, 0)] = pg.transform.rotozoom(kk_img_orig, 0, 0.9)     # 動かない
+    kk_imgs[(5, 0)] = pg.transform.rotozoom(kk_img_orig, -90, 0.9)   # 右
+    kk_imgs[(-5, 0)] = pg.transform.rotozoom(kk_img_orig, 90, 0.9)   # 左
+    kk_imgs[(0, -5)] = pg.transform.rotozoom(kk_img_orig, 0, 0.9)    # 上
+    kk_imgs[(0, 5)] = pg.transform.rotozoom(kk_img_orig, 180, 0.9)   # 下
+    kk_imgs[(5, -5)] = pg.transform.rotozoom(kk_img_orig, -45, 0.9)  # 右上
+    kk_imgs[(5, 5)] = pg.transform.rotozoom(kk_img_orig, -135, 0.9)  # 右下
+    kk_imgs[(-5, -5)] = pg.transform.rotozoom(kk_img_orig, 45, 0.9)  # 左上
+    kk_imgs[(-5, 5)] = pg.transform.rotozoom(kk_img_orig, 135, 0.9)  # 左下
+
+    return kk_imgs
+
+# =============/////============= 
+
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -96,6 +139,10 @@ def main():
 
     # while文の前に呼び出してSurfaceリストと加速度リストを取得
     bb_imgs, bb_accs = init_bb_imgs()
+
+    # ===========演習3============
+    kk_imgs_dict = get_kk_imgs()
+    # ===========////=============
 
     while True:
         for event in pg.event.get():
@@ -145,6 +192,13 @@ def main():
         if not tate:  # 縦方向にはみ出ていたら
             vy *= -1
         bb_rct.move_ip(vx, vy)
+
+
+        # ==========演習3============
+        sum_mv_tuple = tuple(sum_mv)  # sum_mv = [dx, dy]
+        kk_img = kk_imgs_dict.get(sum_mv_tuple, kk_imgs_dict[(0, 0)])
+        # ===========////============
+
         screen.blit(bb_img, bb_rct)
         pg.display.update()
         tmr += 1
